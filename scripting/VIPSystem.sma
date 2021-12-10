@@ -26,7 +26,7 @@
 
 const MAX_FLAGS_LENGTH = 27
 
-new const Version[ ] = "1.0";
+new const Version[ ] = "1.0.1";
 new const g_iSettingsFile[ ] = "VIPSettings.ini"
 new const g_iAccountFile[ ] = "VIPAccount.ini"
 
@@ -42,10 +42,13 @@ enum _:PlayerAccount
 enum _:eSettings
 { 
 	Prefix_Chat[ 16 ],
+	Free_VIP_TIME[ 2 ],
+	Free_VIP_Flag,
 	Access_AddVIP,
 	Access_ScoreBoard,
 	Access_ConnectMessage,
-	Access_OnlineList
+	Access_OnlineList,
+	bool:Free_VIP_Ailable
 }
 
 enum PlayerData 
@@ -60,11 +63,13 @@ new Trie:g_tDatabase
 new eData[ PlayerAccount ], g_iSettings[ eSettings ]
 new g_iPlayer[ MAX_PLAYERS + 1 ][ PlayerData ]
 new g_szConfigs[ 64 ], g_iFwNameChanged;
+new bool:g_bFreeVipTime
 
 public plugin_init( ) 
 {
 	register_plugin( "VIP System", Version, "Supremache" );
 	register_cvar( "vip_system", Version, FCVAR_SERVER|FCVAR_SPONLY|FCVAR_UNLOGGED );
+	
 	
 	g_tDatabase = TrieCreate( );
 	
@@ -136,6 +141,22 @@ public plugin_end( )
 
 public CBasePlayer_Spawn( id )
 {
+	if( g_iSettings[ Free_VIP_Ailable ] )
+	{
+		if( IsVipHour( g_iSettings[ Free_VIP_TIME ][ 0 ] , g_iSettings[ Free_VIP_TIME ][ 1 ] ) )
+		{
+			g_iPlayer[ id ][ VIP ] = 0;
+			g_iPlayer[ id ][ VIP ] |= g_iSettings[ Free_VIP_Flag ];
+			g_bFreeVipTime = true;
+		}
+		else
+		{
+			g_iPlayer[ id ][ VIP ] = 0;
+			g_iPlayer[ id ][ VIP ] = read_flags( "z" );
+			g_bFreeVipTime = false;
+		}
+	}
+	
 	Update_Attribute( id )
 }
 
@@ -326,6 +347,25 @@ ReadConfing( )
 					{
 						g_iSettings[ Access_OnlineList ] = szValue[ 0 ] == '0' ? ~read_flags( "z" ) : read_flags( szValue )
 					}
+					else if( equal( szKey, "FREE_VIP_FLAG" ) )
+					{
+						g_iSettings[ Free_VIP_Flag ] = read_flags( szValue )
+					}
+					else if( equal( szKey, "FREE_VIP_AILABLE" ) )
+					{
+						g_iSettings[ Free_VIP_Ailable ] = _:clamp( str_to_num( szValue ), false, true )
+					}
+					else if( equal( szKey, "FREE_VIP_TIME" ) )
+					{
+						new szTime[ 2 ][ 3 ]
+						parse( szValue, szTime[ 0 ], charsmax( szTime[ ] ), szTime[ 1 ], charsmax( szTime[ ] ) )
+						
+						for( new i = 0; i < 2; i++ )
+						{
+							g_iSettings[ Free_VIP_TIME ][ i ] = clamp( str_to_num( szTime[ i ] ), 00, 24 )
+						}
+					}
+					
 				}
 			}
 		}
@@ -413,6 +453,12 @@ bool:HasDateExpired( const szDate[ ] )
 	return get_systime( ) >= parse_time( szDate, "%m/%d/%Y %H:%M:%S" );
 }
 
+bool:IsVipHour( iStart, iEnd )
+{
+	new iHour; time( iHour );
+	return bool:( iStart < iEnd ? ( iStart <= iHour < iEnd ) : ( iStart <= iHour || iHour < iEnd ) )
+} 
+
 public plugin_natives( )
 {
 	register_library("vip")
@@ -421,12 +467,18 @@ public plugin_natives( )
 	register_native( "get_user_vip", "_get_user_vip" )
 	register_native( "set_user_vip", "_set_user_vip" )
 	register_native( "is_user_vip", "_is_user_vip" )
+	register_native( "is_free_vip_time", "_is_free_vip_time" )
 	register_native( "remove_user_vip", "_remove_user_vip" )
 }
 
 public _get_vip_chat_prefix(iPlugin, iParams)
 {
 	set_string( 1, g_iSettings[ Prefix_Chat ], get_param( 2 ) )
+}
+
+public bool:_is_free_vip_time(iPlugin, iParams)
+{
+	return g_bFreeVipTime;
 }
 
 public bool:_is_user_vip( iPlugin, iParams )
@@ -494,4 +546,3 @@ public _add_user_vip( iPlugin, iParams )
 	fprintf( iFile, szNewLine );
 	fclose( iFile );
 }	
-
