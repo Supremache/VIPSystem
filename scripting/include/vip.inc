@@ -65,6 +65,14 @@ native add_user_vip( const szID[ ], const szPassword[ ], const szFlags[ ], const
  
 native bool:is_user_vip( id )
 
+/**
+ * Checks if the client is VIP according to the VIP flags set in the plugin's configuration file or in subplugin's.
+ *
+ * @param id			Client index.
+ * @return			True if free vip active, false otherwise.
+ */
+ 
+native bool:is_free_vip_time( id )
 
 /**
  * Returns the client is VIP according to the VIP flags.
