@@ -26,7 +26,7 @@
 
 const MAX_FLAGS_LENGTH = 27
 
-new const Version[ ] = "1.0.1";
+new const Version[ ] = "1.0.0";
 new const g_iSettingsFile[ ] = "VIPSettings.ini"
 new const g_iAccountFile[ ] = "VIPAccount.ini"
 
