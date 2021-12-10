@@ -63,15 +63,6 @@ native add_user_vip( const szID[ ], const szPassword[ ], const szFlags[ ], const
  * @return			True if he is, false otherwise.
  */
  
-native bool:crxranks_is_user_vip( id )
-
-/**
- * Checks if the client is VIP according to the VIP flags set in the plugin's configuration file or in subplugin's.
- *
- * @param id			Client index.
- * @return			True if he is, false otherwise.
- */
- 
 native bool:is_user_vip( id )
 
 
