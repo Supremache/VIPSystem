@@ -220,7 +220,7 @@ public OnTaskReloadVIP( )
 	read_argv( 1, szPlayerID, charsmax( szPlayerID ) );
 	read_argv( 2, szPlayerPassword, charsmax( szPlayerPassword ) );
 	read_argv( 3, szPlayerFlags, charsmax( szPlayerFlags ) );
-	read_argv( 6, szPlayerExpire, charsmax( szPlayerExpire ) );
+	read_argv( 4, szPlayerExpire, charsmax( szPlayerExpire ) );
 	
 	if( ( strlen( szPlayerID ) < 3 ) || ( strlen( szPlayerFlags ) < 1 ) )
 	{
