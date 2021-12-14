@@ -26,9 +26,13 @@
 
 const MAX_FLAGS_LENGTH = 27
 
-new const Version[ ] = "1.0.0";
+new const Version[ ] = "1.0.1";
 new const g_iSettingsFile[ ] = "VIPSettings.ini"
 new const g_iAccountFile[ ] = "VIPAccount.ini"
+
+new const g_szNameField[ ] = "%name%"
+new const g_szAuthIDField[ ] = "%authid%"
+new const g_szFlagsField[ ] = "%flag%"
 
 enum _:PlayerAccount
 { 
@@ -42,13 +46,16 @@ enum _:PlayerAccount
 enum _:eSettings
 { 
 	Prefix_Chat[ 16 ],
+	ConnectMessage[ 128 ],
 	Free_VIP_TIME[ 2 ],
 	Free_VIP_Flag,
 	Access_AddVIP,
 	Access_ScoreBoard,
 	Access_ConnectMessage,
 	Access_OnlineList,
-	bool:Free_VIP_Ailable
+	Float:Time_ReloadFile,
+	Float:Time_ConnectMessage,
+	bool:bFreeVIP
 }
 
 enum PlayerData 
@@ -70,23 +77,22 @@ public plugin_init( )
 	register_plugin( "VIP System", Version, "Supremache" );
 	register_cvar( "vip_system", Version, FCVAR_SERVER|FCVAR_SPONLY|FCVAR_UNLOGGED );
 	
-	
 	g_tDatabase = TrieCreate( );
 	
-	get_configsdir( g_szConfigs, charsmax( g_szConfigs ) )
+	get_configsdir( g_szConfigs, charsmax( g_szConfigs ) );
 	
-	RegisterHam( Ham_Spawn, "player", "CBasePlayer_Spawn", 1 )
-	register_event("SayText", "OnSayTextNameChange", "a", "2=#Cstrike_Name_Change")
+	RegisterHam( Ham_Spawn, "player", "CBasePlayer_Spawn", 1 );
+	register_event("SayText", "OnSayTextNameChange", "a", "2=#Cstrike_Name_Change");
 	
 	ReadConfing( );
 	ReloadFile( );
 	
-	set_task( 1.0, "OnTaskReloadVIP", .flags = "b" );
+	set_task( g_iSettings[ Time_ReloadFile ], "OnTaskReloadFile", .flags = "b" );
 }
 
 public OnSayTextNameChange( iMsg, iDestination, iEntity )
 {
-	g_iFwNameChanged = register_forward( FM_ClientUserInfoChanged, "OnNameChange", 1 )
+	g_iFwNameChanged = register_forward( FM_ClientUserInfoChanged, "OnNameChange", 1 );
 }
 
 public OnNameChange( id )
@@ -99,7 +105,7 @@ public OnNameChange( id )
 	static szNewName[ 32 ];
 	get_user_name( id, szNewName, charsmax( szNewName ) );
 	
-	unregister_forward( FM_ClientUserInfoChanged, g_iFwNameChanged, 1 )
+	unregister_forward( FM_ClientUserInfoChanged, g_iFwNameChanged, 1 );
 	
 	copy( g_iPlayer[ id ][ Name ], charsmax( g_iPlayer[ ][ Name ] ), szNewName );
 }
@@ -118,10 +124,35 @@ public client_authorized( id )
 
 public client_putinserver( id )
 {
-	if( g_iPlayer[ id ][ VIP ] & g_iSettings[ Access_ConnectMessage ] )
+	if( is_user_connected( id ) && g_iPlayer[ id ][ VIP ] & g_iSettings[ Access_ConnectMessage ] )
 	{
-		CC_SendMessage( 0, "%s has join the game.", g_iPlayer[ id ][ Name ] );
+		set_task( g_iSettings[ Time_ConnectMessage ], "OnConnectMessage", id );
 	}
+}
+
+public OnConnectMessage( const id )
+{
+	new szMessage[192];
+	copy( szMessage, charsmax( szMessage ), g_iSettings[ ConnectMessage ] )
+
+	if( contain( szMessage, g_szNameField ) != -1 )
+	{
+		replace_all( szMessage, charsmax( szMessage ), g_szNameField, g_iPlayer[ id ][ Name ] )
+	}
+	
+	if( contain( szMessage, g_szAuthIDField ) != -1 )
+	{
+		replace_all( szMessage, charsmax( szMessage ), g_szAuthIDField, g_iPlayer[ id ][ AuthID ] )
+	}
+	
+	if( contain( szMessage, g_szFlagsField ) != -1 )
+	{
+		new szFlag[ 32 ]
+		get_flags( g_iPlayer[ id ][ VIP ], szFlag, charsmax( szFlag ) )
+		replace_all( szMessage, charsmax( szMessage ), g_szFlagsField, szFlag )
+	}
+		
+	CC_SendMessage( 0, szMessage );
 }
 
 public client_disconnected( id )
@@ -141,7 +172,7 @@ public plugin_end( )
 
 public CBasePlayer_Spawn( id )
 {
-	if( g_iSettings[ Free_VIP_Ailable ] )
+	if( g_iSettings[ bFreeVIP ] )
 	{
 		if( IsVipHour( g_iSettings[ Free_VIP_TIME ][ 0 ] , g_iSettings[ Free_VIP_TIME ][ 1 ] ) )
 		{
@@ -160,10 +191,8 @@ public CBasePlayer_Spawn( id )
 	Update_Attribute( id )
 }
 
-public OnTaskReloadVIP( )
+public OnTaskReloadFile( )
 {
-	ReloadFile( );
-	
 	new szPlayers[ MAX_PLAYERS ], iNum;
 	get_players( szPlayers, iNum, "ch" );
 	
@@ -317,6 +346,10 @@ ReadConfing( )
 					{
 						copy( g_iSettings[ Prefix_Chat ], charsmax( g_iSettings[ Prefix_Chat ] ), szValue )
 					}
+					else if( equal( szKey, "CONNECT_MESSAGE" ) )
+					{
+						copy( g_iSettings[ ConnectMessage ], charsmax( g_iSettings[ ConnectMessage ] ), szValue )
+					}
 					else if( equal( szKey, "ADD_VIP" ) )
 					{
 						while( szValue[ 0 ] != 0 && strtok( szValue, szKey, charsmax( szKey ), szValue, charsmax( szValue ), ',' ) )
@@ -347,13 +380,13 @@ ReadConfing( )
 					{
 						g_iSettings[ Access_OnlineList ] = szValue[ 0 ] == '0' ? ~read_flags( "z" ) : read_flags( szValue )
 					}
+					else if( equal( szKey, "FREE_VIP" ) )
+					{
+						g_iSettings[ bFreeVIP ] = _:clamp( str_to_num( szValue ), false, true )
+					}
 					else if( equal( szKey, "FREE_VIP_FLAG" ) )
 					{
 						g_iSettings[ Free_VIP_Flag ] = read_flags( szValue )
-					}
-					else if( equal( szKey, "FREE_VIP_AILABLE" ) )
-					{
-						g_iSettings[ Free_VIP_Ailable ] = _:clamp( str_to_num( szValue ), false, true )
 					}
 					else if( equal( szKey, "FREE_VIP_TIME" ) )
 					{
@@ -362,10 +395,17 @@ ReadConfing( )
 						
 						for( new i = 0; i < 2; i++ )
 						{
-							g_iSettings[ Free_VIP_TIME ][ i ] = clamp( str_to_num( szTime[ i ] ), 00, 24 )
+							g_iSettings[ Free_VIP_TIME ][ i ] = _:clamp( str_to_num( szTime[ i ] ), 00, 24 );
 						}
 					}
-					
+					else if( equal( szKey, "TIME_RELOAD_FILE" ) )
+					{
+						g_iSettings[ Time_ReloadFile ] = _:str_to_float( szValue );
+					}
+					else if( equal( szKey, "TIME_CONNECT_MESSAGE" ) )
+					{
+						g_iSettings[ Time_ConnectMessage ] = _:str_to_float( szValue );
+					}
 				}
 			}
 		}
