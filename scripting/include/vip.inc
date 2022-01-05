@@ -44,6 +44,17 @@ enum _:(<<= 1)
  
 native get_vip_prefix( szBuffer[ ], iLen )
  
+ /**
+ * Returns the vip expire date set in the plugin's configuration file.
+ *
+ * @param id			Client index.
+ * @param szBuffer	 	Buffer to store the prefix in.
+ * @param iLen 			Maximum buffer length.
+ * @noreturn
+ */
+ 
+native get_vip_expire( id, szBuffer[ ], iLen )
+
 /**
  * Set in the plugin's configuration file.
  *
@@ -66,13 +77,13 @@ native add_user_vip( const szID[ ], const szPassword[ ], const szFlags[ ], const
 native bool:is_user_vip( id )
 
 /**
- * Checks if the client is VIP according to the VIP flags set in the plugin's configuration file or in subplugin's.
+ * Checks if the free vip time is active.
  *
  * @param id			Client index.
  * @return			True if free vip active, false otherwise.
  */
  
-native bool:is_free_vip_time( id )
+native bool:is_free_vip_time( )
 
 /**
  * Returns the client is VIP according to the VIP flags.
