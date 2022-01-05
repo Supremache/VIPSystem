@@ -26,13 +26,14 @@
 
 const MAX_FLAGS_LENGTH = 27
 
-new const Version[ ] = "1.0.1";
+new const Version[ ] = "1.0.2";
 new const g_iSettingsFile[ ] = "VIPSettings.ini"
 new const g_iAccountFile[ ] = "VIPAccount.ini"
 
 new const g_szNameField[ ] = "%name%"
 new const g_szAuthIDField[ ] = "%authid%"
 new const g_szFlagsField[ ] = "%flag%"
+new const g_szExpireField[ ] = "%expiredate%"
 
 enum _:PlayerAccount
 { 
@@ -46,7 +47,7 @@ enum _:PlayerAccount
 enum _:eSettings
 { 
 	Prefix_Chat[ 16 ],
-	ConnectMessage[ 128 ],
+	ConnectMessage[ 512 ],
 	Free_VIP_TIME[ 2 ],
 	Free_VIP_Flag,
 	Access_AddVIP,
@@ -75,7 +76,7 @@ new bool:g_bFreeVipTime
 public plugin_init( ) 
 {
 	register_plugin( "VIP System", Version, "Supremache" );
-	register_cvar( "vip_system", Version, FCVAR_SERVER|FCVAR_SPONLY|FCVAR_UNLOGGED );
+	register_cvar( "premuim_vip", Version, FCVAR_SERVER|FCVAR_SPONLY|FCVAR_UNLOGGED );
 	
 	g_tDatabase = TrieCreate( );
 	
@@ -132,7 +133,7 @@ public client_putinserver( id )
 
 public OnConnectMessage( const id )
 {
-	new szMessage[192];
+	new szMessage[ 512 ];
 	copy( szMessage, charsmax( szMessage ), g_iSettings[ ConnectMessage ] )
 
 	if( contain( szMessage, g_szNameField ) != -1 )
@@ -150,6 +151,13 @@ public OnConnectMessage( const id )
 		new szFlag[ 32 ]
 		get_flags( g_iPlayer[ id ][ VIP ], szFlag, charsmax( szFlag ) )
 		replace_all( szMessage, charsmax( szMessage ), g_szFlagsField, szFlag )
+	}
+	
+	if( contain( szMessage, g_szExpireField ) != -1 )
+	{
+		new szExpire[ 64 ]
+		GetExpireDate( id, szExpire, charsmax( szExpire ) )
+		replace_all( szMessage, charsmax( szMessage ), g_szExpireField, szExpire )
 	}
 		
 	CC_SendMessage( 0, szMessage );
@@ -206,23 +214,23 @@ public OnTaskReloadFile( )
 
 @OnVipsOnline( id )
 {
-	new szBuffer[ 192 ], szPlayers[ MAX_PLAYERS ], iIndex, iPlayer, iNum;
+	new szBuffer[ 192 ], szPlayers[ MAX_PLAYERS ], iIndex, iVipNum, iNum;
 	formatex( szBuffer, charsmax( szBuffer ), "&x04Online:&x01 " );
 	
 	get_players( szPlayers, iNum, "ch" );
 	
-	for( new i = 0; i < iNum; i++ )
+	for( new i ; i < iNum; i++ )
 	{
 		iIndex = szPlayers[ i ];
 		
-		if( g_iPlayer[ iIndex ][ VIP ] & g_iSettings[ Access_OnlineList ] ) 
+		if( g_iPlayer[ iIndex ][ VIP ] & g_iSettings[ Access_OnlineList ]  )
 		{
-			iPlayer++ 
-			format( szBuffer, charsmax( szBuffer ), "%s%s%s", szBuffer, g_iPlayer[ iIndex ][ Name ], iPlayer == iNum ? "." : ", " );
+			format( szBuffer, charsmax( szBuffer ), "%s%s%s", szBuffer, g_iPlayer[ iIndex ][ Name ], iIndex == iNum ? "." : ", " );
+			iVipNum = iNum
 		}
 	}
 	
-	if( !iPlayer ) 
+	if( !iVipNum )
 	{
 		add( szBuffer, charsmax( szBuffer ), "There are no vip's online.");
 	}
@@ -488,6 +496,22 @@ Update_Attribute( const id )
 	}
 }
 
+GetExpireDate( id, szExpire[ ], iLen )
+{
+	if( TrieGetArray( g_tDatabase, g_iPlayer[ id ][ AuthID ], eData, sizeof eData ) || TrieGetArray( g_tDatabase, g_iPlayer[ id ][ Name ], eData, sizeof eData ) )
+	{
+		if( eData[ Player_Expire_Date ][ 0 ] )
+		{
+			copy( szExpire, iLen, eData[ Player_Expire_Date ] )
+		}
+		else
+		{
+			copy( szExpire, iLen, "permanently" )
+		}
+	}
+	else copy( szExpire, iLen, "N/A" )
+}
+
 bool:HasDateExpired( const szDate[ ] )
 {
 	return get_systime( ) >= parse_time( szDate, "%m/%d/%Y %H:%M:%S" );
@@ -503,6 +527,7 @@ public plugin_natives( )
 {
 	register_library("vip")
 	register_native( "get_vip_prefix", "_get_vip_chat_prefix" )
+	register_native( "get_vip_expire", "_get_vip_expire" )
 	register_native( "add_user_vip", "_add_user_vip" )
 	register_native( "get_user_vip", "_get_user_vip" )
 	register_native( "set_user_vip", "_set_user_vip" )
@@ -511,12 +536,20 @@ public plugin_natives( )
 	register_native( "remove_user_vip", "_remove_user_vip" )
 }
 
-public _get_vip_chat_prefix(iPlugin, iParams)
+public _get_vip_chat_prefix( iPlugin, iParams )
 {
 	set_string( 1, g_iSettings[ Prefix_Chat ], get_param( 2 ) )
 }
 
-public bool:_is_free_vip_time(iPlugin, iParams)
+public _get_vip_expire( iPlugin, iParams )
+{
+	new szExpire[ 64 ]
+	GetExpireDate( get_param( 1 ), szExpire, charsmax( szExpire ) )
+
+	set_string( 2, szExpire, get_param( 3 ) )
+}
+
+public bool:_is_free_vip_time( iPlugin, iParams )
 {
 	return g_bFreeVipTime;
 }
@@ -557,8 +590,8 @@ public _get_user_vip( iPlugin, iParams )
 
 public _set_user_vip( iPlugin, iParams )
 {
-	g_iPlayer[ get_param( 1 ) ][ VIP ] = 0; // Reset flags
-	g_iPlayer[ get_param( 1 ) ][ VIP ] |= get_param( 2 ); // | Set this flag for the file users if the users doesn't have this flag
+	g_iPlayer[ get_param( 1 ) ][ VIP ] = 0;
+	g_iPlayer[ get_param( 1 ) ][ VIP ] |= get_param( 2 ); 
 }
 
 public _add_user_vip( iPlugin, iParams )
