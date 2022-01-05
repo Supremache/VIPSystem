@@ -75,8 +75,8 @@ new bool:g_bFreeVipTime
 
 public plugin_init( ) 
 {
-	register_plugin( "VIP System", Version, "Supremache" );
-	register_cvar( "premuim_vip", Version, FCVAR_SERVER|FCVAR_SPONLY|FCVAR_UNLOGGED );
+	register_plugin( "Advance VIP System", Version, "Supremache" );
+	register_cvar( "advance_vip", Version, FCVAR_SERVER|FCVAR_SPONLY|FCVAR_UNLOGGED );
 	
 	g_tDatabase = TrieCreate( );
 	
@@ -525,7 +525,7 @@ bool:IsVipHour( iStart, iEnd )
 
 public plugin_natives( )
 {
-	register_library("vip")
+	register_library("advance_vip")
 	register_native( "get_vip_prefix", "_get_vip_chat_prefix" )
 	register_native( "get_vip_expire", "_get_vip_expire" )
 	register_native( "add_user_vip", "_add_user_vip" )
