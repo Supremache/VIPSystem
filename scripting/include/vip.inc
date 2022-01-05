@@ -1,8 +1,8 @@
-#if defined _vip_included
+#if defined _advance_vip_included
     #endinput
 #endif
 
-#define _vip_included
+#define _advance_vip_included
 
 enum _:(<<= 1)
 {
