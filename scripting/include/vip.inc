@@ -1,12 +1,13 @@
-#if defined _advance_vip_included
+#if defined _vip_included
     #endinput
 #endif
 
-#define _advance_vip_included
+#define _vip_included
 
 enum _:(<<= 1)
 {
-	VIP_LEVEL_A = 1,
+	VIP_ALL,
+	VIP_LEVEL_A,
 	VIP_LEVEL_B,
 	VIP_LEVEL_C,
 	VIP_LEVEL_D,
@@ -52,7 +53,7 @@ native get_vip_prefix( szBuffer[ ], iLen )
  * @param iLen 			Maximum buffer length.
  * @noreturn
  */
- 
+
 native get_vip_expire( id, szBuffer[ ], iLen )
 
 /**
@@ -92,6 +93,7 @@ native bool:is_free_vip_time( )
  * @return			Client VIP.
  * @ex: 			get_user_vip( id ) & VIP_LEVEL_A 
  */
+ 
 native get_user_vip( id )
 
 /**
@@ -101,6 +103,7 @@ native get_user_vip( id )
  * @param szFlags		Client Flags.
  * @return			Client VIP.
  */
+ 
 native set_user_vip( id, szFlags )
 
 /**
@@ -110,4 +113,34 @@ native set_user_vip( id, szFlags )
  * @param szFlags		Client Flags select one flags to get remove
  * @noreturn		
  */
+ 
 native remove_user_vip( id, szFlags = -1 )
+
+/**
+ * Returns if the client has any of the specified vip flags.
+ *
+ * @param id      Client index
+ * @param flags   Flag string
+ *
+ * @return        1 if the user has any of the specified flags, 0 otherwise
+ */
+ 
+stock has_vip_flag( id, const szFlags[ ] )
+{
+	return( get_user_vip( id ) & read_flags( szFlags ) );
+}
+
+/**
+ * Returns if the client has all of the specified vip flags.
+ *
+ * @param id      Client index
+ * @param flags   Flag string
+ *
+ * @return        1 if the user has all of the specified flags, 0 otherwise
+ */
+ 
+stock has_all_vip_flags( id, const szFlags[ ] )
+{
+	new _Flags = read_flags( szFlags );
+	return( ( get_user_vip( id ) & _Flags ) == _Flags );
+}
