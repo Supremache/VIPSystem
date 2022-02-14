@@ -470,7 +470,7 @@ bool:IsVipHour( iStart, iEnd )
 
 GetExpireDate( const id, szExpire[ ], iLen )
 {
-	if( TrieGetArray( g_tDatabase, g_iPlayer[ id ][ AuthID ], eData, sizeof eData ) || TrieGetArray( g_tDatabase, g_iPlayer[ id ][ Name ], eData, sizeof eData ) )
+	if( TrieGetArray( g_tDatabase, g_iPlayer[ id ][ AuthID ], eData, sizeof eData ) || TrieGetArray( g_tDatabase, g_iPlayer[ id ][ Name ], eData, sizeof eData ) || TrieGetArray( g_tDatabase, g_iPlayer[ id ][ IP ], eData, sizeof eData ) )
 	{
 		if( eData[ Player_Expire_Date ][ 0 ] )
 		{
