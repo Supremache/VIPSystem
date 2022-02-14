@@ -225,12 +225,12 @@ public OnReloadFile( )
 	{
 		if( IsVipHour( g_iSettings[ FREE_VIP_TIME ][ 0 ], g_iSettings[ FREE_VIP_TIME ][ 1 ] ) )
 		{
-			g_iPlayer[ id ][ VIP ] |= read_flags( g_iSettings[ FREE_VIP_FLAGS ] );
+			g_iPlayer[ id ][ VIP ] |= g_iSettings[ FREE_VIP_FLAGS ] ;
 			g_bFreeVipTime = true;
 		}
 		else
 		{
-			g_iPlayer[ id ][ VIP ] &= ~read_flags( g_iSettings[ FREE_VIP_FLAGS ] );
+			g_iPlayer[ id ][ VIP ] &= ~ g_iSettings[ FREE_VIP_FLAGS ];
 			g_bFreeVipTime = false;
 		}
 	}
@@ -525,7 +525,7 @@ public bool:_is_free_vip_time( iPlugin, iParams )
 public bool:_is_user_vip( iPlugin, iParams )
 {
 	new _iFlag = g_iPlayer[ get_param( 1 ) ][ VIP ];
-	return ( _iFlag > 0 && !( _iFlag & read_flags( "z" ) ) );
+	return ( _iFlag && !( _iFlag & read_flags( "z" ) ) );
 }
 
 public _remove_user_vip( iPlugin, iParams )
