@@ -175,6 +175,7 @@ CheckPlayerVIP( id )
 
 public OnReloadFile( )
 {
+	ReadAccounts( );
 	new szPlayers[ MAX_PLAYERS ], iNum;
 	get_players( szPlayers, iNum, "ch" );
 	
