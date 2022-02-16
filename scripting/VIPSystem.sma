@@ -35,7 +35,7 @@
 const MAX_FLAGS_LENGTH = 26;
 const MAX_PASSWORD_LENGTH = 32;
 
-new const Version[ ] = "1.0.3";
+new const Version[ ] = "1.0.5";
 
 new const g_iSettingsFile[ ] = "VIPSettings.ini"
 
@@ -68,11 +68,13 @@ enum _:eSettings
 	FREE_VIP_TIME[ 2 ],
 	FREE_VIP_FLAGS,
 	ACCESS_ADD_VIP,
+	ACCESS_RELOAD,
 	ACCESS_SCOREBOARD,
 	ACCESS_CONNECT_MESSAGE,
 	ACCESS_VIP_LIST,
 	Float:TASK_RELOAD,
 	Float:TASK_CONNECT_MESSAGE,
+	bool:AUTO_RELOAD
 }
 
 new Trie:g_tDatabase,
@@ -96,7 +98,7 @@ public plugin_init( )
 	ReadConfings( );	
 	ReadAccounts( );
 	
-	set_task( g_iSettings[ TASK_RELOAD ], "OnReloadFile", .flags = "b" );
+	if( TrieGetSize( g_tDatabase ) ) server_print( "[VIP] Loaded %i vips from the file", TrieGetSize( g_tDatabase ) )
 }
 
 public plugin_end( )
@@ -117,7 +119,8 @@ public client_authorized( id )
 	get_user_name( id , g_iPlayer[ id ][ Name ] , charsmax( g_iPlayer[ ][ Name ] ) );
 	get_user_authid( id , g_iPlayer[ id ][ AuthID ] , charsmax( g_iPlayer[ ][ AuthID ] ) );
 	get_user_ip( id, g_iPlayer[ id ][ IP ] , charsmax( g_iPlayer[ ][ IP ] ), 1 );
-	arrayset( g_iPlayer[ id ][ VIP ], read_flags( "z" ), sizeof( g_iPlayer[ ][ VIP ] ) );
+	
+	g_iPlayer[ id ][ VIP ] = read_flags( "z" );
 	
 	CheckPlayerVIP( id );
 }
@@ -127,7 +130,8 @@ public client_disconnected( id )
 	arrayset( g_iPlayer[ id ][ Name ], 0, sizeof( g_iPlayer[ ][ Name ] ) );
 	arrayset( g_iPlayer[ id ][ AuthID ], 0, sizeof( g_iPlayer[ ][ AuthID ] ) );
 	arrayset( g_iPlayer[ id ][ IP ], 0, sizeof( g_iPlayer[ ][ IP ] ) );
-	arrayset( g_iPlayer[ id ][ VIP ], read_flags( "z" ), sizeof( g_iPlayer[ ][ VIP ] ) );
+	
+	g_iPlayer[ id ][ VIP ] = read_flags( "z" );
 }
 
 public OnSayTextNameChange( iMsg, iDestination, iEntity )
@@ -144,11 +148,10 @@ public OnNameChange( id )
 
 	static szNewName[ 32 ];
 	get_user_name( id, szNewName, charsmax( szNewName ) );
-	
-	unregister_forward( FM_ClientUserInfoChanged, g_iFwNameChanged, 1 );
-	
 	copy( g_iPlayer[ id ][ Name ], charsmax( g_iPlayer[ ][ Name ] ), szNewName );
+	
 	CheckPlayerVIP( id );
+	unregister_forward( FM_ClientUserInfoChanged, g_iFwNameChanged, 1 );
 }
 
 CheckPlayerVIP( id )
@@ -176,6 +179,7 @@ CheckPlayerVIP( id )
 public OnReloadFile( )
 {
 	ReadAccounts( );
+	
 	new szPlayers[ MAX_PLAYERS ], iNum;
 	get_players( szPlayers, iNum, "ch" );
 	
@@ -183,6 +187,20 @@ public OnReloadFile( )
 	{
 		CheckPlayerVIP( szPlayers[ i ] );
 	}
+}
+
+@OnReloadVIP( id )
+{
+	if( ~g_iPlayer[ id ][ VIP ] & g_iSettings[ ACCESS_RELOAD ] )
+	{
+		console_print( id, "You have no access to this command" )
+		return PLUGIN_HANDLED;
+	}
+	
+	OnReloadFile( );
+	console_print( id, "[VIP] The file has been successfully reloaded" );
+
+	return PLUGIN_HANDLED;
 }
 
 @OnConnectMessage( id )
@@ -226,12 +244,12 @@ public OnReloadFile( )
 	{
 		if( IsVipHour( g_iSettings[ FREE_VIP_TIME ][ 0 ], g_iSettings[ FREE_VIP_TIME ][ 1 ] ) )
 		{
-			g_iPlayer[ id ][ VIP ] |= g_iSettings[ FREE_VIP_FLAGS ] ;
+			g_iPlayer[ id ][ VIP ] |= g_iSettings[ FREE_VIP_FLAGS ];
 			g_bFreeVipTime = true;
 		}
 		else
 		{
-			g_iPlayer[ id ][ VIP ] &= ~ g_iSettings[ FREE_VIP_FLAGS ];
+			g_iPlayer[ id ][ VIP ] &= ~g_iSettings[ FREE_VIP_FLAGS ];
 			g_bFreeVipTime = false;
 		}
 	}
@@ -406,6 +424,30 @@ ReadConfings( )
 					{
 						g_iSettings[ TASK_CONNECT_MESSAGE ] = _:str_to_float( szValue );
 					}
+					else if( equal( szKey, "AUTO_RELOAD" ) )
+					{
+						g_iSettings[ AUTO_RELOAD ] = _:clamp( str_to_num( szValue ), false, true )
+					}
+					else if( equal( szKey, "ACCESS_RELOAD" ) )
+					{
+						g_iSettings[ ACCESS_RELOAD ] = szValue[ 0 ] == '0' ? ~read_flags( "z" ) : read_flags( szValue )
+					}
+					else if( equal( szKey, "RELOAD_VIP" ) )
+					{
+						if( g_iSettings[ AUTO_RELOAD ] )
+						{
+							set_task( g_iSettings[ TASK_RELOAD ], "OnReloadFile", .flags = "b" );
+						}
+						else
+						{
+							while( szValue[ 0 ] != 0 && strtok( szValue, szKey, charsmax( szKey ), szValue, charsmax( szValue ), ',' ) )
+							{
+								register_concmd( szKey , "@OnReloadVIP" );
+							}
+						}
+					}
+					
+					
 				}
 			}
 		}
@@ -454,8 +496,6 @@ ReadAccounts( )
 		fclose( iFile );
 	}
 	else log_amx( "File %s does not exists", szFile )
-	
-	if( TrieGetSize( g_tDatabase ) ) server_print( "[VIP] Loaded %i vips from the file", TrieGetSize( g_tDatabase ) )
 }
 
 bool:HasDateExpired( const szDate[ ] )
@@ -471,7 +511,7 @@ bool:IsVipHour( iStart, iEnd )
 
 GetExpireDate( const id, szExpire[ ], iLen )
 {
-	if( TrieGetArray( g_tDatabase, g_iPlayer[ id ][ AuthID ], eData, sizeof eData ) || TrieGetArray( g_tDatabase, g_iPlayer[ id ][ Name ], eData, sizeof eData ) || TrieGetArray( g_tDatabase, g_iPlayer[ id ][ IP ], eData, sizeof eData ) )
+	if( TrieGetArray( g_tDatabase, g_iPlayer[ id ][ AuthID ], eData, sizeof eData ) || TrieGetArray( g_tDatabase, g_iPlayer[ id ][ Name ], eData, sizeof eData ) )
 	{
 		if( eData[ Player_Expire_Date ][ 0 ] )
 		{
@@ -569,4 +609,4 @@ public _add_user_vip( iPlugin, iParams )
 	fprintf( iFile, szNewLine );
 	fclose( iFile );
 	OnReloadFile( );
-}
+}	
