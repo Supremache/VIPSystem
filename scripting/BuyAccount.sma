@@ -21,8 +21,6 @@ public plugin_init( )
 {
 	register_plugin( "VIP: Buy Account", "1.0", "Supremache" )
 	
-	register_dictionary( "vip.txt" );
-	
 	new szPrefix[ 2 ][ 32 ];
 	get_vip_prefix( szPrefix[ 0 ], charsmax( szPrefix[ ] ) );
 	formatex( szPrefix[ 1 ], charsmax( szPrefix[ ] ), "^4%s", szPrefix[ 0 ] )
@@ -55,14 +53,14 @@ public AccountMenu( id )
 	
 	szColor = ( GetValue( id ) < g_iCvar[ Price ] || is_user_vip( id ) ) ? "\r" : "\y"
 
-	formatex( szMenuData, charsmax( szMenuData ), "%s•\w Account Flags:%s %s", szColor, szColor, g_iCvar[ FlagsBits ] )
+	formatex( szMenuData, charsmax( szMenuData ), "%sâ€¢\w Account Flags:%s %s", szColor, szColor, g_iCvar[ FlagsBits ] )
 	menu_addtext2( iMenu, szMenuData );
 	
-	formatex( szMenuData, charsmax( szMenuData ), "%s•\w Price:%s %i", szColor, szColor, g_iCvar[ Price ] )
+	formatex( szMenuData, charsmax( szMenuData ), "%sâ€¢\w Price:%s %i", szColor, szColor, g_iCvar[ Price ] )
 	menu_addtext2( iMenu, szMenuData );
 	
 	get_expire_type( szExpireType, charsmax( szExpireType ) );
-	formatex( szMenuData, charsmax( szMenuData ), "%s•\w Expiration:%s %i %s^n^n\y>> Choose your authentication:", szColor, szColor, g_iCvar[ Expiration ], szExpireType )
+	formatex( szMenuData, charsmax( szMenuData ), "%sâ€¢\w Expiration:%s %i %s^n^n\y>> Choose your authentication:", szColor, szColor, g_iCvar[ Expiration ], szExpireType )
 	menu_addtext2( iMenu, szMenuData );
 
 	if( g_szPassword[ id ][ 0 ] != EOS )
@@ -94,7 +92,7 @@ public AccountHandler( id, iMenu, iItem )
 	{
 		if( is_user_vip( id ) )
 		{
-			CC_SendMessage( id, "%L", id, "VIP_EXISTS" );
+			CC_SendMessage( id, "You already have a VIP account" );
 			goto @Destroy;
 		}
 		
