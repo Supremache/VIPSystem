@@ -100,7 +100,7 @@ native bool:is_user_vip( id )
  * @return			True if free vip active, false otherwise.
  */
  
-native bool:is_free_vip_time( )
+native bool:is_event_time( )
 
 /**
  * Returns the client is VIP according to the VIP flags.
@@ -167,7 +167,7 @@ stock has_all_vip_flags( id, const szFlags[ ] )
  * @noreturn
  */
 
-native  reload_vip(  );
+native reload_vip(  );
 
 /**
  * It is called right when event enabled.
