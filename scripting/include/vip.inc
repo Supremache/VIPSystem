@@ -4,10 +4,15 @@
 
 #define _vip_included
 
+#if !defined _vip_const_included
+    #include <vip_const>
+#endif
+
+const VIP_ALL = 0;
+
 enum _:(<<= 1)
 {
-	VIP_ALL,
-	VIP_LEVEL_A,
+	VIP_LEVEL_A = 1,
 	VIP_LEVEL_B,
 	VIP_LEVEL_C,
 	VIP_LEVEL_D,
@@ -45,6 +50,17 @@ enum _:(<<= 1)
  
 native get_vip_prefix( szBuffer[ ], iLen )
  
+/**
+ * Returns the expiration date format.
+ *
+ * @param szBuffer	 	Buffer to store he expiration date format in.
+ * @param iLen 			Maximum buffer length.
+ * @noreturn
+ */
+ 
+native get_expire_type( szBuffer[ ], iLen )
+ 
+
  /**
  * Returns the vip expire date set in the plugin's configuration file.
  *
@@ -54,19 +70,19 @@ native get_vip_prefix( szBuffer[ ], iLen )
  * @noreturn
  */
 
-native get_vip_expire( id, szBuffer[ ], iLen )
+native get_expire_date( id, szBuffer[ ], iLen )
 
 /**
  * Set in the plugin's configuration file.
  *
- * @param szID		 	Client name or authid
+ * @param szID		 	Client name or authid or ip
  * @param szPassword 		Client password
  * @param szFlags 		Client Flags
  * @param szExpireDate  	Client Expire Date
  * @noreturn
  */
  
-native add_user_vip( const szID[ ], const szPassword[ ], const szFlags[ ], const szExpireDate[ ] )
+native add_user_vip( const szID[ ], const szPassword[ ], const szFlags[ ], iExpireDate )
 
 /**
  * Checks if the client is VIP according to the VIP flags set in the plugin's configuration file or in subplugin's.
@@ -144,3 +160,36 @@ stock has_all_vip_flags( id, const szFlags[ ] )
 	new _Flags = read_flags( szFlags );
 	return( ( get_user_vip( id ) & _Flags ) == _Flags );
 }
+
+/**
+ * Reloads the configuration file.
+ *
+ * @noreturn
+ */
+
+native  reload_vip(  );
+
+/**
+ * It is called right when event enabled.
+ *
+ * @param  id     		Client index.
+ * @param  iStart 		Start time.
+ * @param iEnd 		End time.
+ * @param iEventFlags	EventFlags.
+ * @param bEvent  	True if the event started, false otherwise.
+ * @noreturn
+ */
+
+forward VIPEvent( id, iStart, iEnd, iEventFlags, bool:bEvent )
+
+/**
+ * It is called right after the user is added as vips using the console command or the native.
+ *
+ * @param szID		 	Client name or authid or ip
+ * @param szPassword 		Client password
+ * @param szFlags 		Client Flags
+ * @param szExpireDate  	Client Expire Date
+ * @noreturn
+ */
+
+forward VIPAdded( const szID[ ], const szPassword[ ], const szFlags[ ], const szExpireDate[ ] )
