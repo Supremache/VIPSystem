@@ -118,7 +118,7 @@ public AccountHandler( id, iMenu, iItem )
 				g_iAuthentication[ id ] = iItem;
 				if( iItem == 3 )
 				{
-					@GeneratePassword( id );
+					client_cmd( id, "messagemode GeneratePassword");
 				}
 			}
 			default:
