@@ -1,0 +1,13 @@
+[en] -- Supremache
+NO_ACCESS = You have no access to this command.
+FILE_RELOADED = The file has been successfully reloaded.
+NO_VIPS = There are no VIPs.
+USAGE_ADD_VIP = Usage is : amx_addvip <Nick|SteamID> <Password> <Flags> <ExpireDate>
+VIP_EXISTS = %s already exists
+VIP_LAODED = Loaded %i vips from the file
+ADDED_VIP = Successfully Added New VIP: Name: %s | Password: %s | Flags: %s | ExpireDate : %s
+INCORRECT_FORMAT = ERROR: Incorrect Format of VIP
+PAS_ACC = * Password accepted.
+PRIV_SET = * Privileges set.
+INV_PAS = * Invalid password.
+NO_ENTRY = You have no entry to this server
