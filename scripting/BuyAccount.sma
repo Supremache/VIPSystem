@@ -156,5 +156,6 @@ public AccountHandler( id, iMenu, iItem )
 		get_cvar_string( "amx_password_field", szPasswordField, charsmax( szPasswordField ) )
 		set_user_info( id, szPasswordField[ 0 ] ? szPasswordField : "_pw", g_szPassword[ id ] );
 		CC_SendMessage( id, "Your Password is:^4 %s", g_szPassword[ id ] );
+		AccountMenu( id );
 	}
 }
